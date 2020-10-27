@@ -1,5 +1,6 @@
 package com.example.howlstagram_f16
 
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -59,6 +60,7 @@ class LoginActivity : AppCompatActivity() {
         googleSignInClient = GoogleSignIn.getClient(this, gso)
         //printHashKey()
         callbackManager = CallbackManager.Factory.create()
+
     }
 
     override fun onStart() {
@@ -133,15 +135,22 @@ class LoginActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         callbackManager?.onActivityResult(requestCode,resultCode,data)
-        if(requestCode == GOOGLE_LOGIN_CODE){
+        if(requestCode == GOOGLE_LOGIN_CODE && resultCode == Activity.RESULT_OK){
             var result = Auth.GoogleSignInApi.getSignInResultFromIntent(data)
+            if (result != null) {
+                println(result.status.toString())
+            }
             if (result != null) {
                 if(result.isSuccess){
                     var account = result.signInAccount
                     //Second step
-                    firebaseAuthWithGoogle(account)
+                    firebaseAuthWithGoogle(account!!)
+                }
+                else{
+
                 }
             }
+
         }
     }
     fun firebaseAuthWithGoogle(account: GoogleSignInAccount?){
@@ -150,7 +159,7 @@ class LoginActivity : AppCompatActivity() {
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful){
                     //Login
-                    moveMainPage(task.result?.user)
+                    moveMainPage(auth?.currentUser)
                 }
 
                 else{
@@ -168,7 +177,9 @@ class LoginActivity : AppCompatActivity() {
             ?.addOnCompleteListener { task ->
                     if (task.isSuccessful){
                         //Creating a user account
-                        moveMainPage(task.result?.user)
+                        Toast.makeText(this,
+                                getString(R.string.signup_complete), Toast.LENGTH_LONG).show()
+                        moveMainPage(auth?.currentUser)
                     }
                     else if (!task.exception?.message.isNullOrEmpty()){
                         //Show the error message
@@ -181,6 +192,17 @@ class LoginActivity : AppCompatActivity() {
             }
     }
 
+    fun emailLogin() {
+
+        if (email_edittext.text.toString().isNullOrEmpty() || password_edittext.text.toString().isNullOrEmpty()) {
+            Toast.makeText(this, getString(R.string.signout_fail_null), Toast.LENGTH_SHORT).show()
+
+        }
+        else {
+            signinAndSignup()
+        }
+    }
+
     fun signinEmail(){
         auth?.signInWithEmailAndPassword(
             email_edittext.text.toString(),
@@ -189,7 +211,7 @@ class LoginActivity : AppCompatActivity() {
             ?.addOnCompleteListener { task ->
                 if (task.isSuccessful){
                     //Creating a user account
-                    moveMainPage(task.result?.user)
+                    moveMainPage(auth?.currentUser)
                 }
 
                 else{
@@ -201,6 +223,7 @@ class LoginActivity : AppCompatActivity() {
     }
     fun moveMainPage(user: FirebaseUser?){
         if(user != null){
+            Toast.makeText(this, getString(R.string.signin_complete), Toast.LENGTH_SHORT).show()
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }
